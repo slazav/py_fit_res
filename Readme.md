@@ -64,7 +64,6 @@ where
 ----
 ### Duffing oscillator
 
-Do the fit and return result object:
 ```
 fit = fit_res.fit_duff(FF,XX,YY, <parameters>)
 ```
@@ -85,6 +84,20 @@ Some notes:
 Parameter array:
 
 `fit.pars` -- `Re(Amp) Im(Amp) F0 dF A [Re(cbg) Im(cbg)] [Re(lbg) Im(lbg)]`
+
+----
+### Oscillator in ballistic B phase
+
+```
+fit = fit_res.fit_bphase(FF,XX,YY, <parameters>)
+```
+
+All parameters and usage is same as for the linear oscillator. The only difference is
+the extra fitting parameter v0 which is a characteristic velocity (in XX and YY units).
+
+Parameter array:
+
+`fit.pars` -- `Re(Amp) Im(Amp) F0 dF V0 [Re(cbg) Im(cbg)] [Re(lbg) Im(lbg)]`
 
 ----
 #### Examples
@@ -108,6 +121,10 @@ Example 3: Duffing oscillator, multiple frequency sweeps at multiple drives.
 Note that experimental system is not exactly a Duffing oscillator, perfect match is not expected.
 
 ![example 3](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example3.png)
+
+Example 4: Oscillator in ballisic B-phase, multiple frequency sweeps at multiple drives.
+
+![example 4](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example4.png)
 
 #### See also:
 

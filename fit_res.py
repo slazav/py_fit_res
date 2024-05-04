@@ -93,11 +93,11 @@ class fit_lin:
 
   # Function for fitting:
   def fitfunc(self, par, FF, DD=1):
-    CD = par[0] + 1j*par[1];
+    AM = par[0] + 1j*par[1];
     F0 = par[2];
     dF = par[3];
 
-    VV = dF*F0*CD/(F0**2 - FF**2 + 1j*FF*dF)
+    VV = dF*F0*AM/(F0**2 - FF**2 + 1j*FF*dF)
     if not self.coord: VV *= 1j*FF/F0
 
     n=4
@@ -162,17 +162,17 @@ class fit_duff(fit_lin):
 
   # Function for fitting:
   def fitfunc(self, par, FF, DD):
-    CD = par[0] + 1j*par[1];
+    AM = par[0] + 1j*par[1];
     F0 = par[2];
     dF = par[3];
     a  = par[4];
 
     VV = numpy.zeros_like(FF, dtype=complex)
-    if CD!=0:
+    if AM!=0:
       for i in range(FF.size):
         if isinstance(DD, (list, tuple, numpy.ndarray)): d=DD[i]
         else: d = DD
-        d *= dF*F0*CD
+        d *= dF*F0*AM
         p = [9/16.0*a**2,  3/2.0*(F0**2-FF[i]**2)*a, (FF[i]**2-F0**2)**2 + (FF[i]*dF)**2, -abs(d)**2]
         # find only real roots (1 or 3)
         V = numpy.sqrt(numpy.roots(p))
@@ -208,4 +208,60 @@ class fit_duff(fit_lin):
     fit_lin.do_unscale(self, 5)
     self.pars[4]*=self.fsc**2/self.asc**2
     self.errs[4]*=self.fsc**2/self.asc**2
+
+
+###############################################################
+# Oscillator in ballisic B-phase - child of Linear oscillator class
+class fit_bphase(fit_lin):
+
+  def __init__(*args, **kargs): fit_lin.__init__(*args, **kargs)
+
+  # Function for fitting:
+  def fitfunc(self, par, FF, DD):
+    AM = par[0] + 1j*par[1];
+    F0 = par[2];
+    dF = par[3];
+    v0  = par[4];
+
+    VV = numpy.zeros_like(FF, dtype=complex)
+    if AM!=0 and v0>0:
+      VV0 = 0
+      E0 = 2
+      while 1:
+        # magic function
+        dFx = dF / (1 + 0.447*(numpy.abs(VV0)/v0)**1.16)
+
+        # velocity response
+        VV = 1j*AM*DD*dF*FF / (F0**2 - FF**2 + 1j*FF*dFx)
+
+        VV[numpy.isnan(VV)] = 0
+        VV[numpy.isinf(VV)] = 0
+        E = numpy.max(abs(VV-VV0)/abs(VV))
+        if E < 1e-6: break
+        if E > E0: break # avoid infinite growth of V
+        VV0 = VV
+        E0 = E
+
+      if self.coord: VV /= 1j*FF/F0
+
+    n=5
+    if self.const_bg:
+      VV += DD*(par[n] + 1j*par[n+1]); n+=2
+    if self.linear_bg:
+      VV += DD*(par[n] + 1j*par[n+1])*(FF-F0); n+=2
+    return VV
+
+
+  # find initial conditions for scaled data, fill pars list
+  def do_init(self, FF,XX,YY,DD):
+    fit_lin.do_init(self,FF,XX,YY,DD)
+    # some reasonable Duffing parameter:  a*V^2 ~ df*f0
+    v0 = numpy.max(numpy.hypot(XX, YY))
+    self.pars.insert(4, v0)
+
+  # convert parameters to original scale
+  def do_unscale(self):
+    fit_lin.do_unscale(self, 5)
+    self.pars[4]*=self.asc
+    self.errs[4]*=self.asc
 
