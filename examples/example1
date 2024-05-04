@@ -1,0 +1,38 @@
+#!/usr/bin/python3
+
+import numpy
+
+import sys
+sys.path.append('..')
+import fit_res
+from example_plot import plot_fsweeps
+
+# Example 1: fit multiple frequency sweeps at a single drive
+
+# Load data (file contains 5 columns, TT,FF,XX,YY,DD, select only what we need)
+(FF,XX,YY) = numpy.loadtxt('example1.txt', usecols=(1,2,3), unpack=1)
+
+# Do fit:
+do_fit=1
+const_bg=1
+linear_bg=1
+coord=0
+
+fit = fit_res.fit_lin(FF,XX,YY, do_fit=do_fit, 
+     const_bg=const_bg, linear_bg=linear_bg, coord=coord)
+
+# Plot:
+plot_fsweeps("example1.png", fit, FF,XX,YY)
+
+# Print parameters:
+print('Amp = %.3e + %.3e*i'%(fit.pars[0],fit.pars[1]))
+print('|Amp| = %.3e'%(numpy.hypot(fit.pars[0],fit.pars[1])))
+print('f0 = %.3f'%(fit.pars[2]))
+print('df = %.3f'%(fit.pars[3]))
+n=4
+if const_bg:
+  print('constant BG = %.3e + %.3e*i'%(fit.pars[n],fit.pars[n+1]))
+  n+=2
+if linear_bg:
+  print('linear bg = (%.3e + %.3e*i)*(f-f0)'%(fit.pars[n],fit.pars[n+1]))
+  n+=2
