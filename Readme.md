@@ -1,6 +1,6 @@
 ## py_fit_res -- python library for fitting linear and non-linear resonances
 
---
+----
 ### Linear oscillator
 
 Do the fit and return result object:
@@ -61,7 +61,7 @@ where
 * `fit.fitfunc(par, FF, DD=1)` -- calculate the model function using custom parameters
 
 
---
+----
 ### Duffing oscillator
 
 Do the fit and return result object:
@@ -86,7 +86,7 @@ Parameter array:
 
 `fit.pars` -- `Re(Amp) Im(Amp) F0 dF A [Re(cbg) Im(cbg)] [Re(lbg) Im(lbg)]`
 
---
+----
 #### Examples
 
 See `examples` folder.
@@ -98,15 +98,16 @@ with theoretical models.
 
 Example 1: Linear oscillator, multiple frequency sweeps at a single drive
 
-![data1](https://raw.githubusercontent.com/slazav/py_fit_res/main/examples/example1.png)
+![example 1](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example1.png)
 
 Example 2: Linear oscillator, multiple frequency sweeps at multiple drives
 
-![data1](https://raw.githubusercontent.com/slazav/py_fit_res/main/examples/example2.png)
+![example 2](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example2.png)
 
-Example 3: Duffing oscillator, multiple frequency sweeps at multiple drives
+Example 3: Duffing oscillator, multiple frequency sweeps at multiple drives.
+Note that experimental system is not exactly a Duffing oscillator, perfect match is not expected.
 
-![data1](https://raw.githubusercontent.com/slazav/py_fit_res/main/examples/example3.png)
+![example 3](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example3.png)
 
 #### See also:
 
