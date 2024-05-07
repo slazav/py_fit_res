@@ -25,15 +25,10 @@ fit = fit_res.fit_bphase(FF,XX,YY,DD, do_fit=do_fit,
 plot_fsweeps("example4.png", fit, FF,XX,YY,DD, plot_bg=0, both_dir=1)
 
 # Print parameters:
-print('Amp/Drive = %.3e + %.3e*i'%(fit.pars[0],fit.pars[1]))
-print('|Amp/Drive| = %.3e'%(numpy.hypot(fit.pars[0],fit.pars[1])))
-print('f0 = %.3f'%(fit.pars[2]))
-print('df = %.3f'%(fit.pars[3]))
-print('a = %.3e'%(fit.pars[4]))
-n=5
-if const_bg:
-  print('constant BG = %.3e + %.3e*i'%(fit.pars[n],fit.pars[n+1]))
-  n+=2
-if linear_bg:
-  print('linear bg = (%.3e + %.3e*i)*(f-f0)'%(fit.pars[n],fit.pars[n+1]))
-  n+=2
+print('Amp/Drive = {:.3e}'.format(fit.get_amp()))
+print('|Amp|/Drive = %.3e'%(abs(fit.get_amp())))
+print('f0 = %.3f'%(fit.get_f0()))
+print('df = %.3f'%(fit.get_df()))
+print('v0  = %.3e'%(fit.get_v0()))
+print('constant BG = {:.3e}'.format(fit.get_cbg()))
+print('linear BG   = {:.3e}'.format(fit.get_lbg()))

@@ -19,6 +19,8 @@ V.Zavjalov (vl.zavjalov at gmail dot com), 04.05.2024
 ----
 ### Linear oscillator
 
+Basic usage:
+
 Do the fit and return result object:
 ```
 fit = fit_res.fit_lin(FF,XX,YY, <parameters>)
@@ -29,7 +31,14 @@ Calculate model function:
 vv = fit.func(ff)
 ```
 
-#### Parameters
+Get resonance frequency, width, and amplitude:
+```
+f0  = fit.get_f0(ff)
+df  = fit.get_df(ff)
+amp = fit.get_amp(ff)
+```
+
+#### Parameters of `fit_res.fit_lin` function
 
 *   `FF`    -- Frequency array, numpy array
 *   `XX,YY` -- X and Y data components, numpy arrays
@@ -40,42 +49,37 @@ vv = fit.func(ff)
 *   `do_fit=1`    -- do actual fitting or return initial conditions (useful for tests)
 *   `fit_displ=None, fit_maxiter=10000` -- parameters passed to `scipy.optimize.minimize`
 
-
 #### Fitting model and free parameters
 
 * Coordinate response:
 ```
-XX+iYY = Amp * DD * df*f0 / (f0^2 - FF^2 + i*FF*df) [ + cbg*DD] [ + lbg*DD*(FF-f0)]
+XX+iYY = amp * DD * df*f0 / (f0^2 - FF^2 + i*FF*df) [ + cbg*DD] [ + lbg*DD*(FF-f0)]
 ```
 
 * Velocity response:
 ```
-XX+iYY = Amp*DD * i*df*FF / (f0^2 - FF^2 + i*FF*df) [ + Cbg*DD] [ + lbg*DD*(FF-f0)]
+XX+iYY = amp*DD * i*df*FF / (f0^2 - FF^2 + i*FF*df) [ + Cbg*DD] [ + lbg*DD*(FF-f0)]
 ```
 where
 
-*   `Amp` -- complex amplitude per unit drive (same units as `XX/DD` and `YY/DD`)
+*   `amp` -- complex amplitude per unit drive (same units as `XX/DD` and `YY/DD`)
 *   `f0, df` -- resonance frequency and width (same units as `FF`)
 *   `cbg` -- complex constant background per unit drive (only if `const_bg=1`)
 *   `lbg` -- complex linear background per unit drive (only if `linear_bg=1`)
 
+For each parameter two functions are defined:
 
-#### Parameter array (4, 6, or 8 values)
+* `get_<name>(p=None)` -- extract value of parameter `<name>` from parameter array `p`
+  (if not None) or from fit result.
 
-  `fit.pars` -- `Re(Amp) Im(Amp) F0 dF [Re(cbg) Im(cbg)] [Re(lbg) Im(lbg)]`
-
-
-#### Uncertainties array
-
-  `fit.errs` -- same order as for `fit.pars`
-
+* `get_<name>_e(e=None)` -- extract uncertainty of parameter `<name>` from uncertainty
+  array `e` (if not None) or from fit result.
 
 #### Functions
 
-* `fit.func(FF,DD=1)` -- calculate the model function
-* `fit.func_bg(FF,DD=1)` -- background part of the model function
-* `fit.fitfunc(par, FF, DD=1)` -- calculate the model function using custom parameters
-
+* `fit.func(FF,DD=1,p=None)` -- calculate the model function for parameter array `p`
+  (if not None) or for fit result.
+* `fit.func_bg(FF,DD=1,p=None)` -- calculate background part of the model function.
 
 ----
 ### Duffing oscillator
@@ -85,7 +89,8 @@ fit = fit_res.fit_duff(FF,XX,YY, <parameters>)
 ```
 
 All parameters and usage is same as for the linear oscillator. The only difference is
-the extra fitting parameter A which is a factor in the Duffing force `F = -A*x^3`.
+the extra fitting parameter `a` which is a factor in the Duffing force `F = -a*x^3`.
+Additional functions: `get_a`, `get_a_e`.
 
 Some notes:
 * If frequency units are switched from rad/s to Hz then units of `A` changes as well.
@@ -97,10 +102,6 @@ Some notes:
 * In real life you can rarely observe pure Duffing systems, in many cases this fit
   will be useful only for small non-linearities.
 
-Parameter array:
-
-`fit.pars` -- `Re(Amp) Im(Amp) F0 dF A [Re(cbg) Im(cbg)] [Re(lbg) Im(lbg)]`
-
 ----
 ### Oscillator in ballistic B phase
 
@@ -109,11 +110,8 @@ fit = fit_res.fit_bphase(FF,XX,YY, <parameters>)
 ```
 
 All parameters and usage is same as for the linear oscillator. The only difference is
-the extra fitting parameter v0 which is a characteristic velocity (in XX and YY units).
-
-Parameter array:
-
-`fit.pars` -- `Re(Amp) Im(Amp) F0 dF V0 [Re(cbg) Im(cbg)] [Re(lbg) Im(lbg)]`
+the extra fitting parameter `v0` which is a characteristic velocity (in XX and YY units).
+Additional functions: `get_v0`, `get_v0_e`.
 
 ----
 #### Examples

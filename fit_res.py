@@ -91,40 +91,98 @@ class fit_lin:
 
     self.do_unscale()
 
-  # Background part of the function
-  def fitfunc_bg(self, par, FF, DD=1):
-    F0 = par[2]
-    VV = numpy.zeros_like(FF, dtype=complex)
-    n=self.bg_offset
+  #### Get parameters
+
+  # complex amplitude per unit drive
+  def get_amp(self, p = None):
+    if p is None: p = self.pars
+    return p[0] + 1j*p[1]
+
+  # resonance frequency
+  def get_f0(self, p = None):
+    if p is None: p = self.pars
+    return p[2]
+
+  # resonance width
+  def get_df(self, p = None):
+    if p is None: p = self.pars
+    return p[3]
+
+  # complex constant background per unit drive
+  def get_cbg(self, p = None):
+    if p is None: p = self.pars
     if self.const_bg:
-      VV += par[n] + 1j*par[n+1]; n+=2
-    if self.linear_bg:
-      VV += (par[n] + 1j*par[n+1])*(FF-F0); n+=2
+      n=self.bg_offset
+      return p[n] + 1j*p[n+1];
+    else: return 0
+
+  # complex linear background per unit drive
+  def get_lbg(self, p = None):
+    if p is None: p = self.pars
+    n=self.bg_offset
+    if self.const_bg: n+=2
+    if self.linear_bg: return p[n] + 1j*p[n+1];
+    else: return 0
+
+  # Uncertainties
+
+  # complex amplitude per unit drive
+  def get_amp_e(self, e = None):
+    if e is None: e = self.pars
+    return e[0] + 1j*e[1]
+
+  # resonance frequency
+  def get_f0_e(self, e = None):
+    if e is None: e = self.pars
+    return e[2]
+
+  # resonance width
+  def get_df_e(self, e = None):
+    if e is None: e = self.pars
+    return e[3]
+
+  # complex constant background per unit drive
+  def get_cbg_e(self, e = None):
+    if e is None: e = self.pars
+    if self.const_bg:
+      n=self.bg_offset
+      return e[n] + 1j*e[n+1];
+    else: return 0
+
+  # complex linear background per unit drive
+  def get_lbg_e(self, e = None):
+    if e is None: e = self.pars
+    n=self.bg_offset
+    if self.const_bg: n+=2
+    if self.linear_bg: return e[n] + 1j*e[n+1];
+    else: return 0
+
+  #### Functions
+
+  # Background part of the function
+  def func_bg(self, FF, DD=1, p=None):
+    VV = numpy.zeros_like(FF, dtype=complex)
+    if self.const_bg:  VV += self.get_cbg(p)
+    if self.linear_bg: VV += self.get_lbg(p)*(FF-self.get_f0(p))
     return DD*VV
 
   # Function for fitting:
-  def fitfunc(self, par, FF, DD=1):
-    AM = par[0] + 1j*par[1];
-    F0 = par[2];
-    dF = par[3];
+  def func(self, FF, DD=1, p=None):
+    AM = self.get_amp(p)
+    F0 = self.get_f0(p)
+    dF = self.get_df(p)
 
     VV = dF*F0*AM*DD/(F0**2 - FF**2 + 1j*FF*dF)
     if not self.coord: VV *= 1j*FF/F0
-    VV += self.fitfunc_bg(par, FF, DD)
+    VV += self.func_bg(FF, DD, p)
     return VV
 
   # function for minimization
   def minfunc(self, par, FF, XX, YY, DD):
-    VV = self.fitfunc(par, FF,DD)
+    VV = self.func(FF,DD, par)
     return numpy.linalg.norm(XX + 1j*YY - VV)
 
-  # function representing the fit result
-  def func(self, FF,DD=1):
-    return self.fitfunc(self.pars, FF, DD)
-
-  # only background
-  def func_bg(self, FF,DD=1):
-    return self.fitfunc_bg(self.pars, FF, DD)
+  ####
 
   # find initial conditions for scaled data, fill pars list
   def do_init(self, FF,XX,YY,DD):
@@ -165,12 +223,21 @@ class fit_duff(fit_lin):
 
   def __init__(*args, **kargs): fit_lin.__init__(*args, **kargs)
 
+  # Duffing parameter
+  def get_a(self, p=None):
+    if p is None: p = self.pars
+    return p[4]
+
+  def get_a_e(self, e=None):
+    if e is None: e = self.errs
+    return e[4]
+
   # Function for fitting:
-  def fitfunc(self, par, FF, DD):
-    AM = par[0] + 1j*par[1];
-    F0 = par[2];
-    dF = par[3];
-    a  = par[4];
+  def func(self, FF, DD, p=None):
+    AM = self.get_amp(p);
+    F0 = self.get_f0(p)
+    dF = self.get_df(p)
+    a  = self.get_a(p)
 
     VV = numpy.zeros_like(FF, dtype=complex)
     if AM!=0:
@@ -193,7 +260,7 @@ class fit_duff(fit_lin):
 
       if not self.coord: VV *= 1j*FF/F0
 
-    VV += self.fitfunc_bg(par, FF, DD)
+    VV += self.func_bg(FF, DD, p)
     return VV
 
 
@@ -218,12 +285,20 @@ class fit_bphase(fit_lin):
 
   def __init__(*args, **kargs): fit_lin.__init__(*args, **kargs)
 
+  def get_v0(self, p=None):
+    if p is None: p = self.pars
+    return p[4]
+
+  def get_v0_e(self, e=None):
+    if e is None: e = self.errs
+    return e[4]
+
   # Function for fitting:
-  def fitfunc(self, par, FF, DD):
-    AM = par[0] + 1j*par[1];
-    F0 = par[2];
-    dF = par[3];
-    v0  = par[4];
+  def func(self, FF, DD, p=None):
+    AM = self.get_amp(p);
+    F0 = self.get_f0(p)
+    dF = self.get_df(p)
+    v0 = self.get_v0(p)
 
     VV = numpy.zeros_like(FF, dtype=complex)
     if AM!=0 and v0>0:
@@ -246,7 +321,7 @@ class fit_bphase(fit_lin):
 
       if self.coord: VV /= 1j*FF/F0
 
-    VV += self.fitfunc_bg(par, FF, DD)
+    VV += self.func_bg(FF, DD, p)
     return VV
 
 
