@@ -50,6 +50,7 @@ def init8(FF,XS,YS,coord):
 # Linear oscillator - a base class for fitting and returning results
 
 class fit_lin:
+  bg_offset = 4; # offset of background parameters in pars array
 
   # constructor; do the fit
   def __init__(self, FF, XX, YY, DD=1,
@@ -90,6 +91,16 @@ class fit_lin:
 
     self.do_unscale()
 
+  # Background part of the function
+  def fitfunc_bg(self, par, FF, DD=1):
+    F0 = par[2]
+    VV = numpy.zeros_like(FF, dtype=complex)
+    n=self.bg_offset
+    if self.const_bg:
+      VV += par[n] + 1j*par[n+1]; n+=2
+    if self.linear_bg:
+      VV += (par[n] + 1j*par[n+1])*(FF-F0); n+=2
+    return DD*VV
 
   # Function for fitting:
   def fitfunc(self, par, FF, DD=1):
@@ -97,15 +108,10 @@ class fit_lin:
     F0 = par[2];
     dF = par[3];
 
-    VV = dF*F0*AM/(F0**2 - FF**2 + 1j*FF*dF)
+    VV = dF*F0*AM*DD/(F0**2 - FF**2 + 1j*FF*dF)
     if not self.coord: VV *= 1j*FF/F0
-
-    n=4
-    if self.const_bg:
-      VV += par[n] + 1j*par[n+1]; n+=2
-    if self.linear_bg:
-      VV += (par[n] + 1j*par[n+1])*(FF-F0); n+=2
-    return DD*VV
+    VV += self.fitfunc_bg(par, FF, DD)
+    return VV
 
   # function for minimization
   def minfunc(self, par, FF, XX, YY, DD):
@@ -118,9 +124,7 @@ class fit_lin:
 
   # only background
   def func_bg(self, FF,DD=1):
-    p = self.pars.copy()
-    p[0:2]=[0]*2
-    return self.fitfunc(p, FF, DD)
+    return self.fitfunc_bg(self.pars, FF, DD)
 
   # find initial conditions for scaled data, fill pars list
   def do_init(self, FF,XX,YY,DD):
@@ -133,14 +137,14 @@ class fit_lin:
     if self.linear_bg: self.pars.extend((E,F))
 
   # convert parameters to original scale
-  def do_unscale(self, nbg=4):
+  def do_unscale(self):
     for n in (0,1):
       self.pars[n]*=self.asc/self.dsc
       self.errs[n]*=self.asc/self.dsc
     for n in (2,3):
       self.pars[n]*=self.fsc
       self.errs[n]*=self.fsc
-    n=nbg
+    n=self.bg_offset
     if self.const_bg:
       self.pars[n]*=self.asc/self.dsc
       self.errs[n]*=self.asc/self.dsc
@@ -157,6 +161,7 @@ class fit_lin:
 ###############################################################
 # Duffing oscillator - child of Linear oscillator class
 class fit_duff(fit_lin):
+  bg_offset = 5; # offset of background parameters in pars array
 
   def __init__(*args, **kargs): fit_lin.__init__(*args, **kargs)
 
@@ -188,11 +193,7 @@ class fit_duff(fit_lin):
 
       if not self.coord: VV *= 1j*FF/F0
 
-    n=5
-    if self.const_bg:
-      VV += DD*(par[n] + 1j*par[n+1]); n+=2
-    if self.linear_bg:
-      VV += DD*(par[n] + 1j*par[n+1])*(FF-F0); n+=2
+    VV += self.fitfunc_bg(par, FF, DD)
     return VV
 
 
@@ -205,7 +206,7 @@ class fit_duff(fit_lin):
 
   # convert parameters to original scale
   def do_unscale(self):
-    fit_lin.do_unscale(self, 5)
+    fit_lin.do_unscale(self)
     self.pars[4]*=self.fsc**2/self.asc**2
     self.errs[4]*=self.fsc**2/self.asc**2
 
@@ -213,6 +214,7 @@ class fit_duff(fit_lin):
 ###############################################################
 # Oscillator in ballisic B-phase - child of Linear oscillator class
 class fit_bphase(fit_lin):
+  bg_offset = 5; # offset of background parameters in pars array
 
   def __init__(*args, **kargs): fit_lin.__init__(*args, **kargs)
 
@@ -244,11 +246,7 @@ class fit_bphase(fit_lin):
 
       if self.coord: VV /= 1j*FF/F0
 
-    n=5
-    if self.const_bg:
-      VV += DD*(par[n] + 1j*par[n+1]); n+=2
-    if self.linear_bg:
-      VV += DD*(par[n] + 1j*par[n+1])*(FF-F0); n+=2
+    VV += self.fitfunc_bg(par, FF, DD)
     return VV
 
 
@@ -261,7 +259,7 @@ class fit_bphase(fit_lin):
 
   # convert parameters to original scale
   def do_unscale(self):
-    fit_lin.do_unscale(self, 5)
+    fit_lin.do_unscale(self)
     self.pars[4]*=self.asc
     self.errs[4]*=self.asc
 
