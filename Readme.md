@@ -114,6 +114,15 @@ the extra fitting parameter `v0` which is a characteristic velocity (in XX and Y
 Additional functions: `get_v0`, `get_v0_e`.
 
 ----
+### Arbitrary non-linear oscillator
+```
+fit = fit_res.fit_nonlin(FF,XX,YY, ffunc=None, dfunc=None, <parameters>)
+```
+
+Use arbitrary non-linear functions `f0n(|x|)` and `dfn(|v|)`.
+TODO: link to the theory, examples
+
+----
 #### Examples
 
 See `examples` folder.

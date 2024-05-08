@@ -215,6 +215,9 @@ class fit_lin:
       self.pars[n+1]*=self.asc/self.dsc/self.fsc
       self.errs[n+1]*=self.asc/self.dsc/self.fsc
       n+=2
+    self.fsc = 1
+    self.dsc = 1
+    self.asc = 1
 
 ###############################################################
 # Duffing oscillator - child of Linear oscillator class
@@ -273,9 +276,9 @@ class fit_duff(fit_lin):
 
   # convert parameters to original scale
   def do_unscale(self):
-    fit_lin.do_unscale(self)
     self.pars[4]*=self.fsc**2/self.asc**2
     self.errs[4]*=self.fsc**2/self.asc**2
+    fit_lin.do_unscale(self)
 
 
 ###############################################################
@@ -293,31 +296,32 @@ class fit_bphase(fit_lin):
     if e is None: e = self.errs
     return e[4]
 
-  # Function for fitting:
+  # Model function:
   def func(self, FF, DD, p=None):
     AM = self.get_amp(p);
     F0 = self.get_f0(p)
     dF = self.get_df(p)
     v0 = self.get_v0(p)
 
+    def vfunc(x,d,f):
+      dFx = dF / (1 + 0.447*(x/v0)**1.16)
+      return d / (F0**2 - FF[i]**2 + 1j*FF[i]*dFx)
+
     VV = numpy.zeros_like(FF, dtype=complex)
     if AM!=0 and v0>0:
-      VV0 = 0
-      E0 = 2
-      while 1:
-        # magic function
-        dFx = dF / (1 + 0.447*(numpy.abs(VV0)/v0)**1.16)
+      x=0
+      for i in range(FF.size):
+        if isinstance(DD, (list, tuple, numpy.ndarray)): d=DD[i]
+        else: d = DD
+        d *= 1j*dF*FF[i]*AM
 
-        # velocity response
-        VV = 1j*AM*DD*dF*FF / (F0**2 - FF**2 + 1j*FF*dFx)
+        # find |V|
+        def zfunc(x): return abs(vfunc(x,d,FF[i])) - x
+        res = scipy.optimize.root_scalar(zfunc, x0=x)
+        #if not res.converged: continue
+        x = res.root
 
-        VV[numpy.isnan(VV)] = 0
-        VV[numpy.isinf(VV)] = 0
-        E = numpy.max(abs(VV-VV0)/abs(VV))
-        if E < 1e-6: break
-        if E > E0: break # avoid infinite growth of V
-        VV0 = VV
-        E0 = E
+        VV[i] = vfunc(x,d,FF[i])
 
       if self.coord: VV /= 1j*FF/F0
 
@@ -349,7 +353,66 @@ class fit_bphase(fit_lin):
 
   # convert parameters to original scale
   def do_unscale(self):
-    fit_lin.do_unscale(self)
     self.pars[4]*=self.asc
     self.errs[4]*=self.asc
+    fit_lin.do_unscale(self)
 
+
+###############################################################
+# Oscillator with arbitrary non-linear functions f0n(|x|) and dFn(|v|)
+class fit_nonlin(fit_lin):
+
+  def __init__(self, *args, ffunc=None, dfunc=None, **kargs):
+    self.ffunc=ffunc
+    self.dfunc=dfunc
+    fit_lin.__init__(self, *args, **kargs)
+
+  # Function for fitting:
+  def func(self, FF, DD, p=None):
+    AM = self.get_amp(p);
+    F0 = self.get_f0(p)
+    dF = self.get_df(p)
+
+    # coordinate!
+    def cfunc(x, d, f):
+      if not self.ffunc is None: F0x = F0*self.ffunc(self.asc*x)
+      else: F0x = F0
+      if not self.dfunc is None: dFx = dF*self.dfunc(self.asc*x*f/F0)
+      else: dFx = dF
+      return d / (F0x**2 - f**2 + 1j*f*dFx)
+
+    VV = numpy.zeros_like(FF, dtype=complex)
+    if AM!=0:
+
+      x=0
+      for i in range(FF.size):
+        if isinstance(DD, (list, tuple, numpy.ndarray)): d=DD[i]
+        else: d = DD
+        d *= dF*F0*AM
+
+        # for finding x=|X|
+        def zfunc(x): return x - abs(cfunc(x,d,FF[i]))
+        res = scipy.optimize.root_scalar(zfunc, x0=x)
+        x = res.root
+        VV[i] = cfunc(x,d,FF[i])
+
+      if not self.coord: VV *= 1j*FF/F0
+
+    VV += self.func_bg(FF, DD, p)
+    return VV
+
+
+  # function for minimization
+  def minfunc(self, par, FF, XX, YY, DD):
+    CC = XX + 1j*YY - self.func_bg(FF,DD, par)
+    AM = self.get_amp(par);
+    F0 = self.get_f0(par)
+    dF = self.get_df(par)
+    # -> coord
+    if not self.coord:  CC*= F0/(1j*FF)
+    if not self.ffunc is None: F0x = F0*self.ffunc(self.asc*numpy.abs(CC))
+    else: F0x = F0
+    if not self.dfunc is None: dFx = dF*self.dfunc(self.asc*numpy.abs(CC)*FF/F0)
+    else: dFx = dF
+    CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
+    return numpy.linalg.norm(CC - CCc)
