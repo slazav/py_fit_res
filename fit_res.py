@@ -245,9 +245,9 @@ class fit_duff(fit_lin):
         if isinstance(DD, (list, tuple, numpy.ndarray)): d=DD[i]
         else: d = DD
         d *= dF*F0*AM
-        p = [9/16.0*a**2,  3/2.0*(F0**2-FF[i]**2)*a, (FF[i]**2-F0**2)**2 + (FF[i]*dF)**2, -abs(d)**2]
+        pp = [9/16.0*a**2,  3/2.0*(F0**2-FF[i]**2)*a, (FF[i]**2-F0**2)**2 + (FF[i]*dF)**2, -abs(d)**2]
         # find only real roots (1 or 3)
-        V = numpy.sqrt(numpy.roots(p))
+        V = numpy.sqrt(numpy.roots(pp))
         V = numpy.real(V[numpy.imag(V)==0])
         # add phase
         V = d/(F0**2 - FF[i]**2 + 1j*FF[i]*dF + 3/4.0*a*V**2)
