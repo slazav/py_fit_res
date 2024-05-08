@@ -324,6 +324,21 @@ class fit_bphase(fit_lin):
     VV += self.func_bg(FF, DD, p)
     return VV
 
+  # Better function for minimization.
+  # (function from the base class works too, but slower and less stable)
+  def minfunc(self, par, FF, XX, YY, DD):
+    VV = XX + 1j*YY - self.func_bg(FF,DD,par)
+    AM = self.get_amp(par);
+    F0 = self.get_f0(par)
+    dF = self.get_df(par)
+    v0 = self.get_v0(par)
+    if self.coord:  VV*= 1j*FF/F0; #  -> vel
+
+    dFx = dF / (1 + 0.447*(numpy.abs(VV)/v0)**1.16)
+
+    VVc = DD*AM*dF*1j*FF / (F0**2 - FF**2 + 1j*FF*dFx)
+    return numpy.linalg.norm(VV - VVc)
+
 
   # find initial conditions for scaled data, fill pars list
   def do_init(self, FF,XX,YY,DD):
