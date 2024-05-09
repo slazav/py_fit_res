@@ -209,7 +209,7 @@ class fit_lin:
     if not self.coord:
       self.pars[0] =  D
       self.pars[1] = -C
-    if self.cbg0: self.pars.extend((A*numpy.max(DD), B*numpy.max(DD)))
+    if self.cbg0: self.pars.extend((A*numpy.min(DD), B*numpy.min(DD)))
     if self.cbg: self.pars.extend((A,B))
     if self.lbg: self.pars.extend((E,F))
 
