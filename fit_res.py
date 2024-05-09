@@ -72,10 +72,12 @@ class fit_lin:
     #self.asc = 1
     #self.dsc = 1
 
-
-    self.do_init(FF/self.fsc, XX/self.asc, YY/self.asc, DD/self.dsc)
-
+    self.pars = self.par_init(FF/self.fsc, XX/self.asc, YY/self.asc, DD/self.dsc)
+    self.errs = [0]*len(self.pars)
+    self.sc = self.par_scales(self.asc, self.dsc, self.fsc)
+    if len(self.pars) != len(self.sc):   raise Exception('len(pars)!=len(sc)')
     e = 0
+
     if do_fit:
       res = scipy.optimize.minimize(self.minfunc, self.pars, (FF/self.fsc,XX/self.asc,YY/self.asc,DD/self.dsc),
         options={'disp': fit_displ, 'maxiter': fit_maxiter})
@@ -86,11 +88,15 @@ class fit_lin:
       self.errs = numpy.sqrt(0.5*res.fun*numpy.diag(res.hess_inv)).tolist()
       self.pars = res.x.tolist()
       e = res.fun/FF.size
-    else:
-      self.errs = [0]*len(self.pars)
-      e = 0
 
-    self.do_unscale()
+    # convert parameters to original scale
+    for i in range(len(self.pars)):
+      self.pars[i] *= self.sc[i]
+      self.errs[i] *= self.sc[i]
+
+    self.fsc = 1
+    self.dsc = 1
+    self.asc = 1
 
   #### Get parameters
 
@@ -203,46 +209,24 @@ class fit_lin:
   ####
 
   # find initial conditions for scaled data, fill pars list
-  def do_init(self, FF,XX,YY,DD):
+  def par_init(self, FF,XX,YY,DD):
     (C,D,F0,dF,A,B,E,F) = init8(FF, XX/DD, YY/DD, self.coord)
-    self.pars = [C,D,F0,dF]
+    p = [C,D,F0,dF]
     if not self.coord:
-      self.pars[0] =  D
-      self.pars[1] = -C
-    if self.cbg0: self.pars.extend((A*numpy.min(DD), B*numpy.min(DD)))
-    if self.cbg: self.pars.extend((A,B))
-    if self.lbg: self.pars.extend((E,F))
+      p[0] =  D
+      p[1] = -C
+    if self.cbg0: p.extend((A*numpy.min(DD), B*numpy.min(DD)))
+    if self.cbg: p.extend((A,B))
+    if self.lbg: p.extend((E,F))
+    return p
 
-  # convert parameters to original scale
-  def do_unscale(self):
-    for n in (0,1):
-      self.pars[n]*=self.asc/self.dsc
-      self.errs[n]*=self.asc/self.dsc
-    for n in (2,3):
-      self.pars[n]*=self.fsc
-      self.errs[n]*=self.fsc
-    n=self.bg_offset
-    if self.cbg0:
-      self.pars[n]*=self.asc
-      self.errs[n]*=self.asc
-      self.pars[n+1]*=self.asc
-      self.errs[n+1]*=self.asc
-      n+=2
-    if self.cbg:
-      self.pars[n]*=self.asc/self.dsc
-      self.errs[n]*=self.asc/self.dsc
-      self.pars[n+1]*=self.asc/self.dsc
-      self.errs[n+1]*=self.asc/self.dsc
-      n+=2
-    if self.lbg:
-      self.pars[n]*=self.asc/self.dsc/self.fsc
-      self.errs[n]*=self.asc/self.dsc/self.fsc
-      self.pars[n+1]*=self.asc/self.dsc/self.fsc
-      self.errs[n+1]*=self.asc/self.dsc/self.fsc
-      n+=2
-    self.fsc = 1
-    self.dsc = 1
-    self.asc = 1
+  # parameter scaling
+  def par_scales(self, asc,dsc,fsc):
+    ret = [asc/dsc, asc/dsc, fsc, fsc]
+    if self.cbg0: ret.extend([self.asc]*2)
+    if self.cbg:  ret.extend([self.asc/self.dsc]*2)
+    if self.lbg:  ret.extend([self.asc/self.dsc/self.fsc]*2)
+    return ret
 
 ###############################################################
 # Duffing oscillator - child of Linear oscillator class
@@ -291,19 +275,19 @@ class fit_duff(fit_lin):
     VV += self.func_bg(FF, DD, p)
     return VV
 
+  # parameter scaling
+  def par_scales(self, asc,dsc,fsc):
+    sc = fit_lin.par_scales(self,asc,dsc,fsc)
+    sc.insert(4, fsc**2/asc**2)
+    return sc
 
   # find initial conditions for scaled data, fill pars list
-  def do_init(self, FF,XX,YY,DD):
-    fit_lin.do_init(self,FF,XX,YY,DD)
+  def par_init(self, FF,XX,YY,DD):
+    p = fit_lin.par_init(self,FF,XX,YY,DD)
     # some reasonable Duffing parameter:  a*V^2 ~ df*f0
-    a = self.pars[2]*self.pars[3] / numpy.max(numpy.hypot(XX, YY))**2
-    self.pars.insert(4, -a)
-
-  # convert parameters to original scale
-  def do_unscale(self):
-    self.pars[4]*=self.fsc**2/self.asc**2
-    self.errs[4]*=self.fsc**2/self.asc**2
-    fit_lin.do_unscale(self)
+    a = p[2]*p[3] / numpy.max(numpy.hypot(XX, YY))**2
+    p.insert(4, -a)
+    return p
 
 
 ###############################################################
@@ -368,19 +352,19 @@ class fit_bphase(fit_lin):
     VVc = DD*AM*dF*1j*FF / (F0**2 - FF**2 + 1j*FF*dFx)
     return numpy.linalg.norm(VV - VVc)
 
+  # parameter scaling
+  def par_scales(self, asc,dsc,fsc):
+    sc = fit_lin.par_scales(self,asc,dsc,fsc)
+    sc.insert(4, asc)
+    return sc
 
   # find initial conditions for scaled data, fill pars list
-  def do_init(self, FF,XX,YY,DD):
-    fit_lin.do_init(self,FF,XX,YY,DD)
+  def par_init(self, FF,XX,YY,DD):
+    p = fit_lin.par_init(self,FF,XX,YY,DD)
     # some reasonable Duffing parameter:  a*V^2 ~ df*f0
     v0 = numpy.max(numpy.hypot(XX, YY))
-    self.pars.insert(4, v0)
-
-  # convert parameters to original scale
-  def do_unscale(self):
-    self.pars[4]*=self.asc
-    self.errs[4]*=self.asc
-    fit_lin.do_unscale(self)
+    p.insert(4, v0)
+    return p
 
 
 ###############################################################
