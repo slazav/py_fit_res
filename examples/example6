@@ -1,0 +1,126 @@
+#!/usr/bin/python3
+
+import numpy
+import scipy.optimize
+import matplotlib.pyplot as plt
+
+import sys
+sys.path.append('/home/sla/PROG/py_fit_res')
+import fit_res
+
+
+################################################################################
+## Load data
+FF,XX,YY,DD = numpy.loadtxt("example6.txt", usecols=(1,2,3,4), unpack=True)
+signals = (1, 4, 6, 9, 11)
+sh = 1e-6
+
+drives = numpy.unique(DD)
+ii = numpy.logical_or.reduce(
+  (DD==drives[0], DD==drives[3], DD==drives[5], DD==drives[7], DD==drives[10]))
+FF=FF[ii]
+XX=XX[ii]
+YY=YY[ii]
+DD=DD[ii]
+drives = numpy.unique(DD)
+
+##########
+
+ffunc=None
+dfunc=None
+jj = numpy.hypot(XX,YY) < 0.8e-6
+cbg0=0
+for i in (1,2,3,4,5,6,):
+  print('step ', i)
+  # refit using non-linear function
+
+  fit = fit_res.fit_nonlin(FF[jj],XX[jj],YY[jj],DD[jj], do_fit=1,
+     cbg0=cbg0, cbg=1, lbg=1, coord=0, dfunc=dfunc, ffunc=ffunc)
+  cbg0=1
+
+  Amp = fit.get_amp()
+  F0 = fit.get_f0()
+  dF = fit.get_df()
+
+  VV = XX + 1j*YY - fit.func_bg(FF, DD)
+  CC = VV * F0/FF/1j
+  II = FF**2 + Amp*DD*dF*F0/CC
+  F0n = numpy.sqrt(numpy.real(II))
+  dFn = numpy.imag(II)/FF
+
+  kk=numpy.gradient(abs(VV))<3e-7
+  pF0n = numpy.polyfit(numpy.abs(CC[kk]), F0n[kk], 2, w=numpy.abs(CC[kk]))
+  pdFn = numpy.polyfit(numpy.abs(VV[kk]), dFn[kk], 2, w=numpy.abs(VV[kk]))
+
+  def ffunc(cc): return numpy.polyval(pF0n, cc)/numpy.polyval(pF0n, 0)
+  def dfunc(vv): return numpy.polyval(pdFn, vv)/numpy.polyval(pdFn, 0)
+
+  F0 = fit.pars[2] = numpy.polyval(pF0n, 0)
+  dF = fit.pars[3] = numpy.polyval(pdFn, 0)
+
+#########
+# plot results
+
+(fig, ax) = plt.subplots(2,3)
+
+ff=numpy.linspace(numpy.min(FF), numpy.max(FF), 200)
+ff=numpy.append(ff, numpy.flip(ff))
+cc=numpy.linspace(0,numpy.max(abs(CC))*1.05, 200)
+vv=numpy.linspace(0,numpy.max(abs(VV))*1.05, 200)
+
+n=0
+for d in drives:
+  ii = DD==d
+  n+=1
+  C = 'C%d'%(n%10)
+
+  # data
+  ax[0,0].plot(FF[ii], -n*sh+XX[ii], C+'.-')
+  ax[0,1].plot(FF[ii], n*sh+YY[ii], C+'.-')
+  ax[0,2].plot(FF[ii], n*sh+numpy.hypot(XX[ii],YY[ii]), C+'.-', label='%.1fnA'%(d*1e9))
+
+  ## fit
+  xx = fit.func(ff, d)
+  ax[0,0].plot(ff, -n*sh+numpy.real(xx), 'k-', linewidth=0.8)
+  ax[0,1].plot(ff, n*sh+numpy.imag(xx), 'k-', linewidth=0.8)
+  ax[0,2].plot(ff, n*sh+numpy.abs(xx), 'k-', linewidth=0.8)
+
+#  ## bg
+#  bg = fit.func_bg(ff, d)
+#  ax[0,0].plot(ff, -n*sh+numpy.real(bg), 'k--', linewidth=0.8)
+#  ax[0,1].plot(ff, n*sh+numpy.imag(bg), 'k--', linewidth=0.8)
+#  ax[0,2].plot(ff, n*sh+numpy.abs(bg), 'k--', linewidth=0.8)
+
+  # F0n, dFn
+  ax[1,0].plot(numpy.abs(CC[ii]), F0n[ii], C+'.')
+  ax[1,1].plot(numpy.abs(VV[ii]), dFn[ii], C+'.')
+
+#  ax[1,0].plot(cc,numpy.polyval(pF0n, cc), 'k-', linewidth=0.5)
+#  ax[1,1].plot(vv,numpy.polyval(pdFn, vv), 'k-', linewidth=0.5)
+
+  ax[1,0].plot(cc,F0*ffunc(cc), 'k-', linewidth=0.5)
+  ax[1,1].plot(vv,dF*dfunc(vv), 'k-', linewidth=0.5)
+
+  # gradients
+  #ax[1,2].plot(FF[ii], numpy.gradient(abs(VV[ii])), C+'.-')
+
+#  numpy.savetxt('pl%d_data.txt'%(n), numpy.column_stack((FF[ii],XX[ii],YY[ii],abs(CC[ii]),F0n[ii],abs(VV[ii]),dFn[ii])))
+#  numpy.savetxt('pl%d_fit.txt'%(n),  numpy.column_stack((ff, xx.real, xx.imag)))
+#  numpy.savetxt('pl%d_funcs.txt'%(n), numpy.column_stack((cc,F0*ffunc(cc),vv,dF*dfunc(vv))))
+
+
+
+######
+
+
+ax[0,2].legend()
+ax[0,0].set_title('Re(V) [Vrms]')
+ax[0,1].set_title('Im(V) [Vrms]')
+ax[0,2].set_title('|V| [Vrms]')
+for i in (0,1,2): ax[0,i].set_xlabel('freq [Hz]')
+
+plt.gcf().set_size_inches(10, 10)
+plt.savefig("example6.png", dpi=100)
+plt.close()
+
+
