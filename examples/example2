@@ -3,7 +3,7 @@
 import numpy
 
 import sys
-sys.path.append('..')
+sys.path.insert(0,'..')
 import fit_res
 from example_plot import plot_fsweeps
 
@@ -13,13 +13,8 @@ from example_plot import plot_fsweeps
 (FF,XX,YY,DD) = numpy.loadtxt('example2.txt', usecols=(1,2,3,4), unpack=1)
 
 # Do fit:
-do_fit=1
-cbg=1
-lbg=1
-coord=0
-
-fit = fit_res.fit_lin(FF,XX,YY,DD, do_fit=do_fit,
-     cbg=cbg, lbg=lbg, coord=coord)
+fit = fit_res.fit_lin(FF,XX,YY,DD, do_fit=1,
+     cbg=1, lbg=1, coord=0)
 
 # Plot:
 plot_fsweeps("example2.png", fit, FF,XX,YY,DD, plot_bg=0)
@@ -29,5 +24,6 @@ print('Amp/Drive = {:.3e}'.format(fit.get_amp()))
 print('|Amp|/Drive = %.3e'%(abs(fit.get_amp())))
 print('f0 = %.3f'%(fit.get_f0()))
 print('df = %.3f'%(fit.get_df()))
-print('constant BG = {:.3e}'.format(fit.get_cbg()))
-print('linear BG   = {:.3e}'.format(fit.get_lbg()))
+print('cbg0 = {:.3e}'.format(fit.get_cbg0()))
+print('cbg  = {:.3e}'.format(fit.get_cbg()))
+print('lbg  = {:.3e}'.format(fit.get_lbg()))

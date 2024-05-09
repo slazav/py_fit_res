@@ -3,7 +3,7 @@
 import numpy
 
 import sys
-sys.path.append('..')
+sys.path.insert(0,'..')
 import fit_res
 from example_plot import plot_fsweeps
 
@@ -13,18 +13,11 @@ from example_plot import plot_fsweeps
 (FF,XX,YY,DD) = numpy.loadtxt('example4.txt', usecols=(1,2,3,4), unpack=1)
 
 # Do fit:
-do_fit=1
-cbg0 = 1
-cbg=1
-lbg=0
-coord=0
-
-fit = fit_res.fit_bphase(FF,XX,YY,DD, do_fit=do_fit, cbg0 = cbg0,
-     cbg=cbg, lbg=lbg, coord=coord)
+fit = fit_res.fit_bphase(FF,XX,YY,DD, do_fit=1,
+     cbg0=1, cbg=1, lbg=0, coord=0)
 
 # Plot:
 plot_fsweeps("example4.png", fit, FF,XX,YY,DD, plot_bg=0, both_dir=1)
-print(fit.pars)
 
 # Print parameters:
 print('Amp/Drive = {:.3e}'.format(fit.get_amp()))
