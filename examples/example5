@@ -1,0 +1,38 @@
+#!/usr/bin/python3
+
+import numpy
+
+import sys
+sys.path.insert(0,'..')
+import fit_res
+from example_plot import plot_fsweeps
+
+# Example 4: Oscillator in ballistic B phase
+
+# Load data (file contains 5 columns, TT,FF,XX,YY,DD, select only what we need)
+(FF,XX,YY,DD) = numpy.loadtxt('example5.txt', usecols=(1,2,3,4), unpack=1)
+
+# Fit B-phase non-linearity
+fit = fit_res.fit_bphase(FF,XX,YY,DD, do_fit=1,
+     cbg=1, lbg=0, coord=0)
+
+# The non-linear function
+v0 = fit.get_v0()
+def dfunc(v): return 1/(1 + 0.447*(v/v0)**1.16)
+
+# Refit with the external non-linear function:
+fit = fit_res.fit_nonlin(FF,XX,YY,DD, do_fit=1,
+     cbg=1, lbg=0, coord=0, dfunc=dfunc)
+
+# Plot:
+plot_fsweeps("example5.png", fit, FF,XX,YY,DD, plot_bg=0, both_dir=1)
+
+# Print parameters:
+print('Amp/Drive = {:.3e}'.format(fit.get_amp()))
+print('|Amp|/Drive = %.3e'%(abs(fit.get_amp())))
+print('f0 = %.3f'%(fit.get_f0()))
+print('df = %.3f'%(fit.get_df()))
+print('v0 = %.3e'%(v0))
+print('cbg0 = {:.3e}'.format(fit.get_cbg0()))
+print('cbg  = {:.3e}'.format(fit.get_cbg()))
+print('lbg  = {:.3e}'.format(fit.get_lbg()))
