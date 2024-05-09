@@ -44,28 +44,32 @@ amp = fit.get_amp(ff)
 *   `XX,YY` -- X and Y data components, numpy arrays
 *   `DD=1`  -- Drive array or number. Use to fit multiple drives simultaneously
 *   `coord=1`     -- switch between coordinate/velocity response (`1i*f` factor)
-*   `const_bg=1`  -- use constant background (2 extra fitting parameters)
-*   `linear_bg=1` -- use linear background (2 extra fitting parameters)
+*   `const_bg0=1` -- use background idependent on both drive and freqeuncy (2 extra parameters)
+*   `const_bg=1`  -- use background proportional to drive and independent on frequency (2 extra parameters)
+*   `linear_bg=1` -- use background proportional to drive and linear in frequency (2 extra parameters)
 *   `do_fit=1`    -- do actual fitting or return initial conditions (useful for tests)
 *   `fit_displ=None, fit_maxiter=10000` -- parameters passed to `scipy.optimize.minimize`
+
+No not use `const_bg0` and `const_bg` together unless you have multiple drives in your data
 
 #### Fitting model and free parameters
 
 * Coordinate response:
 ```
-XX+iYY = amp * DD * df*f0 / (f0^2 - FF^2 + i*FF*df) [ + cbg*DD] [ + lbg*DD*(FF-f0)]
+XX+iYY = amp*DD * df*f0 / (f0^2 - FF^2 + i*FF*df) [+cbg0] [+cbg*DD] [+lbg*DD*(FF-f0)]
 ```
 
 * Velocity response:
 ```
-XX+iYY = amp*DD * i*df*FF / (f0^2 - FF^2 + i*FF*df) [ + Cbg*DD] [ + lbg*DD*(FF-f0)]
+XX+iYY = amp*DD * i*df*FF / (f0^2 - FF^2 + i*FF*df) [+cbg0] [+cbg*DD] [+lbg*DD*(FF-f0)]
 ```
 where
 
 *   `amp` -- complex amplitude per unit drive (same units as `XX/DD` and `YY/DD`)
 *   `f0, df` -- resonance frequency and width (same units as `FF`)
-*   `cbg` -- complex constant background per unit drive (only if `const_bg=1`)
-*   `lbg` -- complex linear background per unit drive (only if `linear_bg=1`)
+*   `cbg0` -- complex constant drive-independent background per unit drive (only if `const_bg0=1`)
+*   `cbg`  -- complex constant background per unit drive (only if `const_bg=1`)
+*   `lbg`  -- complex linear background per unit drive (only if `linear_bg=1`)
 
 For each parameter two functions are defined:
 
@@ -73,12 +77,13 @@ For each parameter two functions are defined:
   (if not None) or from fit result.
 
 * `get_<name>_e(e=None)` -- extract uncertainty of parameter `<name>` from uncertainty
-  array `e` (if not None) or from fit result.
+  array `e` (if not None) or from the fit result.
 
 #### Functions
 
 * `fit.func(FF,DD=1,p=None)` -- calculate the model function for parameter array `p`
-  (if not None) or for fit result.
+  (if not None) or for the fit result.
+
 * `fit.func_bg(FF,DD=1,p=None)` -- calculate background part of the model function.
 
 ----
@@ -113,6 +118,12 @@ All parameters and usage is same as for the linear oscillator. The only differen
 the extra fitting parameter `v0` which is a characteristic velocity (in XX and YY units).
 Additional functions: `get_v0`, `get_v0_e`.
 
+For the non-linear damping function the following approximation is used:
+```
+df_n(|v|) = df / (1 + 0.447*(|v|/v0)**1.16)
+```
+TODO: link to the theory
+
 ----
 ### Arbitrary non-linear oscillator
 ```
@@ -120,6 +131,7 @@ fit = fit_res.fit_nonlin(FF,XX,YY, ffunc=None, dfunc=None, <parameters>)
 ```
 
 Use arbitrary non-linear functions `f0n(|x|)` and `dfn(|v|)`.
+
 TODO: link to the theory, examples
 
 ----

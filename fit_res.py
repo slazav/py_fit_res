@@ -54,14 +54,15 @@ class fit_lin:
 
   # constructor; do the fit
   def __init__(self, FF, XX, YY, DD=1,
-        coord=0, const_bg=1, linear_bg=0,
+        coord=0, const_bg0=0, const_bg=1, linear_bg=0,
         do_fit=1, fit_displ=None, fit_maxiter=10000):
 
     self.pars=[]; # list of free parameters
     self.errs=[]; # list of parameter uncertainties
     self.coord=coord; # use coordinates/velocities
-    self.const_bg=const_bg;   # use constant background (2 extra parameters)
-    self.linear_bg=linear_bg; # use linear background (2 extra parameters)
+    self.const_bg0=const_bg0;   # use background idependent on both drive and freqeuncy (2 extra parameters)
+    self.const_bg=const_bg;   # use background proportional to drive and independent on frequency (2 extra parameters)
+    self.linear_bg=linear_bg; # use background proportional to drive and linear in frequency (2 extra parameters)
 
     # scaling factors
     self.fsc = numpy.max(FF)
@@ -108,19 +109,27 @@ class fit_lin:
     if p is None: p = self.pars
     return p[3]
 
+  # complex backdround constant vs drive and frequency
+  def get_cbg0(self, p = None):
+    if p is None: p = self.pars
+    n=self.bg_offset
+    if self.const_bg0: return p[n] + 1j*p[n+1];
+    else: return 0
+
   # complex constant background per unit drive
   def get_cbg(self, p = None):
     if p is None: p = self.pars
-    if self.const_bg:
-      n=self.bg_offset
-      return p[n] + 1j*p[n+1];
+    n=self.bg_offset
+    if self.const_bg0: n+=2
+    if self.const_bg:  return p[n] + 1j*p[n+1];
     else: return 0
 
   # complex linear background per unit drive
   def get_lbg(self, p = None):
     if p is None: p = self.pars
     n=self.bg_offset
-    if self.const_bg: n+=2
+    if self.const_bg0: n+=2
+    if self.const_bg:  n+=2
     if self.linear_bg: return p[n] + 1j*p[n+1];
     else: return 0
 
@@ -142,18 +151,26 @@ class fit_lin:
     return e[3]
 
   # complex constant background per unit drive
+  def get_cbg0_e(self, e = None):
+    if e is None: e = self.pars
+    n=self.bg_offset
+    if self.const_bg0: return e[n] + 1j*e[n+1];
+    else: return 0
+
+  # complex constant background per unit drive
   def get_cbg_e(self, e = None):
     if e is None: e = self.pars
-    if self.const_bg:
-      n=self.bg_offset
-      return e[n] + 1j*e[n+1];
+    n=self.bg_offset
+    if self.const_bg0: n+=2
+    if self.const_bg:  return e[n] + 1j*e[n+1];
     else: return 0
 
   # complex linear background per unit drive
   def get_lbg_e(self, e = None):
     if e is None: e = self.pars
     n=self.bg_offset
-    if self.const_bg: n+=2
+    if self.const_bg0: n+=2
+    if self.const_bg:  n+=2
     if self.linear_bg: return e[n] + 1j*e[n+1];
     else: return 0
 
@@ -162,9 +179,10 @@ class fit_lin:
   # Background part of the function
   def func_bg(self, FF, DD=1, p=None):
     VV = numpy.zeros_like(FF, dtype=complex)
-    if self.const_bg:  VV += self.get_cbg(p)
-    if self.linear_bg: VV += self.get_lbg(p)*(FF-self.get_f0(p))
-    return DD*VV
+    if self.const_bg0: VV += self.get_cbg0(p)
+    if self.const_bg:  VV += DD*self.get_cbg(p)
+    if self.linear_bg: VV += DD*self.get_lbg(p)*(FF-self.get_f0(p))
+    return VV
 
   # Function for fitting:
   def func(self, FF, DD=1, p=None):
@@ -191,6 +209,7 @@ class fit_lin:
     if not self.coord:
       self.pars[0] =  D
       self.pars[1] = -C
+    if self.const_bg0: self.pars.extend((A*numpy.max(DD), B*numpy.max(DD)))
     if self.const_bg:  self.pars.extend((A,B))
     if self.linear_bg: self.pars.extend((E,F))
 
@@ -203,6 +222,12 @@ class fit_lin:
       self.pars[n]*=self.fsc
       self.errs[n]*=self.fsc
     n=self.bg_offset
+    if self.const_bg0:
+      self.pars[n]*=self.asc
+      self.errs[n]*=self.asc
+      self.pars[n+1]*=self.asc
+      self.errs[n+1]*=self.asc
+      n+=2
     if self.const_bg:
       self.pars[n]*=self.asc/self.dsc
       self.errs[n]*=self.asc/self.dsc
@@ -393,6 +418,9 @@ class fit_nonlin(fit_lin):
         # for finding x=|X|
         def zfunc(x): return x - abs(cfunc(x,d,FF[i]))
         res = scipy.optimize.root_scalar(zfunc, x0=x)
+        for j in range(12):
+          res = scipy.optimize.root_scalar(zfunc, x0=res.root)
+        if not res.converged: print('not converged')
         x = res.root
         VV[i] = cfunc(x,d,FF[i])
 
