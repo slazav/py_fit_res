@@ -44,13 +44,13 @@ amp = fit.get_amp(ff)
 *   `XX,YY` -- X and Y data components, numpy arrays
 *   `DD=1`  -- Drive array or number. Use to fit multiple drives simultaneously
 *   `coord=1`     -- switch between coordinate/velocity response (`1i*f` factor)
-*   `const_bg0=1` -- use background idependent on both drive and freqeuncy (2 extra parameters)
-*   `const_bg=1`  -- use background proportional to drive and independent on frequency (2 extra parameters)
-*   `linear_bg=1` -- use background proportional to drive and linear in frequency (2 extra parameters)
+*   `cbg0=1` -- use background idependent on both drive and freqeuncy (2 extra parameters)
+*   `cbg=1`  -- use background proportional to drive and independent on frequency (2 extra parameters)
+*   `lbg=1`  -- use background proportional to drive and linear in frequency (2 extra parameters)
 *   `do_fit=1`    -- do actual fitting or return initial conditions (useful for tests)
 *   `fit_displ=None, fit_maxiter=10000` -- parameters passed to `scipy.optimize.minimize`
 
-No not use `const_bg0` and `const_bg` together unless you have multiple drives in your data
+No not use `cbg0` and `cbg` together unless you have multiple drives in your data
 
 #### Fitting model and free parameters
 
@@ -67,9 +67,9 @@ where
 
 *   `amp` -- complex amplitude per unit drive (same units as `XX/DD` and `YY/DD`)
 *   `f0, df` -- resonance frequency and width (same units as `FF`)
-*   `cbg0` -- complex constant drive-independent background per unit drive (only if `const_bg0=1`)
-*   `cbg`  -- complex constant background per unit drive (only if `const_bg=1`)
-*   `lbg`  -- complex linear background per unit drive (only if `linear_bg=1`)
+*   `cbg0` -- complex constant drive-independent background per unit drive (only if `cbg0=1`)
+*   `cbg`  -- complex constant background per unit drive (only if `cbg=1`)
+*   `lbg`  -- complex linear background per unit drive (only if `lbg=1`)
 
 For each parameter two functions are defined:
 

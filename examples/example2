@@ -14,12 +14,12 @@ from example_plot import plot_fsweeps
 
 # Do fit:
 do_fit=1
-const_bg=1
-linear_bg=1
+cbg=1
+lbg=1
 coord=0
 
 fit = fit_res.fit_lin(FF,XX,YY,DD, do_fit=do_fit,
-     const_bg=const_bg, linear_bg=linear_bg, coord=coord)
+     cbg=cbg, lbg=lbg, coord=coord)
 
 # Plot:
 plot_fsweeps("example2.png", fit, FF,XX,YY,DD, plot_bg=0)
