@@ -418,8 +418,6 @@ class fit_nonlin(fit_lin):
         # for finding x=|X|
         def zfunc(x): return x - abs(cfunc(x,d,FF[i]))
         res = scipy.optimize.root_scalar(zfunc, x0=x)
-        for j in range(12):
-          res = scipy.optimize.root_scalar(zfunc, x0=res.root)
         if not res.converged: print('not converged')
         x = res.root
         VV[i] = cfunc(x,d,FF[i])
