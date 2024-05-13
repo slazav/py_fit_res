@@ -5,7 +5,7 @@ import scipy.optimize
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('/home/sla/PROG/py_fit_res')
+sys.path.insert(0,'..')
 import fit_res
 
 
