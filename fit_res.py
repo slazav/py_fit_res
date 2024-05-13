@@ -313,7 +313,7 @@ class fit_bphase(fit_lin):
     v0 = self.get_v0(p)
 
     def vfunc(x,d,f):
-      dFx = dF / (1 + 0.447*(x/v0)**1.16)
+      dFx = dF / (1 + 0.477*(x/v0)**1.16)
       return d / (F0**2 - FF[i]**2 + 1j*FF[i]*dFx)
 
     VV = numpy.zeros_like(FF, dtype=complex)
@@ -347,7 +347,7 @@ class fit_bphase(fit_lin):
     v0 = self.get_v0(par)
     if self.coord:  VV*= 1j*FF/F0; #  -> vel
 
-    dFx = dF / (1 + 0.447*(numpy.abs(VV)/v0)**1.16)
+    dFx = dF / (1 + 0.477*(numpy.abs(VV)/v0)**1.16)
 
     VVc = DD*AM*dF*1j*FF / (F0**2 - FF**2 + 1j*FF*dFx)
     return numpy.linalg.norm(VV - VVc)
@@ -426,3 +426,26 @@ class fit_nonlin(fit_lin):
     else: dFx = dF
     CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
     return numpy.linalg.norm(CC - CCc)
+
+
+###############################################################
+### f(x) -> w^2(|x|), f(v) -> delta(|v|) transformation
+def transform(func, x, npts=100):
+  tt=numpy.linspace(0, 2*math.pi, npts)
+  st=numpy.sin(tt)
+  if isinstance(x, numpy.ndarray):
+    r = numpy.zeros_like(x)
+    for i in range(x.size):
+      yy = func(-abs(x[i])*st)*st
+      r[i] = 2/numpy.abs(x[i]) * numpy.trapz(yy,tt)/2/math.pi
+      print(yy)
+  else:
+    yy = func(-abs(x)*st)*st
+    r = 2/abs(x) * numpy.trapz(yy,tt)/2/math.pi
+  return r
+
+
+
+
+
+
