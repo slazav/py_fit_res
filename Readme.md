@@ -11,6 +11,8 @@ Features:
 * Optional fit parameters for constant and linear backgrounds
 * A single fit of multiple frequency sweeps and multiple drives is possible
 * Internal data scaling (to have all parameters of the order of 1 during fitting)
+* Non-linear resonance proccessing according with
+  ![PDF](https://raw.githubusercontent.com/slazav/py_fit_res/master/fit_res_note.pdf)
 
 Comments and suggestions are very welcome!
 
@@ -122,7 +124,6 @@ For the non-linear damping function the following approximation is used:
 ```
 df_n(|v|) = df / (1 + 0.447*(|v|/v0)**1.16)
 ```
-TODO: link to the theory
 
 ----
 ### Arbitrary non-linear oscillator
@@ -140,7 +141,7 @@ transform(func, x, npts=100, dfunc0=None)
 itransform(func, dfunc, x, npts=100)
 ```
 
-TODO: link to the theory, examples
+See the PDF note for the theory
 
 ----
 #### Examples
@@ -169,7 +170,13 @@ Example 4: Oscillator in ballistic B-phase, multiple frequency sweeps at multipl
 
 ![example 4](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example4.png)
 
+Example 5: Same data as in the example 4. 
+
+Examples 6 and 7: more realistic examples for the note (see below)
+
 #### See also:
 
-* fit_res modules in `https://github.com/slazav/exp_py`: older version of the same code.
-* `https://github.com/slazav/fit_res`: my c++ command line filter for fitting linear resonances.
+
+* `https://github.com/slazav/fit_res` -- my c++ command line filter for fitting linear resonances.
+* fit_res modules in `https://github.com/slazav/exp_py` -- older version of the same code.
+* `https://raw.githubusercontent.com/slazav/py_fit_res/master/fit_res_note.pdf` -- the note with some theory and examples :
