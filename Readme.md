@@ -132,6 +132,14 @@ fit = fit_res.fit_nonlin(FF,XX,YY, ffunc=None, dfunc=None, <parameters>)
 
 Use arbitrary non-linear functions `f0n(|x|)` and `dfn(|v|)`.
 
+The functions can be calculated as integral transforms of
+the non-linear force acting on the oscillator using following interface:
+
+```
+transform(func, x, npts=100, dfunc0=None)
+itransform(func, dfunc, x, npts=100)
+```
+
 TODO: link to the theory, examples
 
 ----

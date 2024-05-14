@@ -430,22 +430,46 @@ class fit_nonlin(fit_lin):
 
 ###############################################################
 ### f(x) -> w^2(|x|), f(v) -> delta(|v|) transformation
-def transform(func, x, npts=100):
+### x==0: F(x) = -f'(0)
+### else: F(x) = - 2/x int_0^2pi func(x*cos(t))*cos(t) dt/2pi
+
+def transform(func, x, npts=100, dfunc0=None):
   tt=numpy.linspace(0, 2*math.pi, npts)
-  st=numpy.sin(tt)
-  if isinstance(x, numpy.ndarray):
-    r = numpy.zeros_like(x)
-    for i in range(x.size):
-      yy = func(-abs(x[i])*st)*st
-      r[i] = 2/numpy.abs(x[i]) * numpy.trapz(yy,tt)/2/math.pi
-      print(yy)
+  ct=numpy.cos(tt)
+
+  # transform one point
+  def t1(x):
+    if x==0:
+      if not dfunc0 is None: return -dfunc0
+      else: return None
+    ii = func(abs(x)*ct)*ct
+    return - 2/abs(x) * numpy.trapz(ii,tt)/2/math.pi
+
+  # transform an numpy array point by point
+  if isinstance(x, (numpy.ndarray, tuple, list)):
+    r = numpy.zeros_like(x, dtype=float)
+    for i in range(r.size): r[i] = t1(x[i])
   else:
-    yy = func(-abs(x)*st)*st
-    r = 2/abs(x) * numpy.trapz(yy,tt)/2/math.pi
+    r = t1(x)
   return r
 
+def itransform(func, dfunc, x, npts=100):
 
+  tt=numpy.linspace(0, math.pi/2, npts)
+  ct=numpy.cos(tt)
 
+  # transform one point
+  def t1(x):
+    cx = abs(x)*ct
+    ii = cx * func(cx) + cx**2/2 * dfunc(cx)
+    f = -numpy.trapz(ii,tt)
+    if x>0: return f
+    else: return -f
 
-
-
+  # transform an numpy array point by point
+  if isinstance(x, (numpy.ndarray, tuple, list)):
+    r = numpy.zeros_like(x, dtype=float)
+    for i in range(r.size): r[i] = t1(x[i])
+  else:
+    r = t1(x)
+  return r
