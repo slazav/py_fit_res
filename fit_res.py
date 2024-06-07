@@ -54,7 +54,7 @@ class fit_lin:
 
   # constructor; do the fit
   def __init__(self, FF, XX, YY, DD=1,
-        coord=0, cbg0=0, cbg=1, lbg=0,
+        coord=0, cbg0=0, cbg=1, lbg=0, weight_pwr=0,
         do_fit=1, fit_displ=None, fit_maxiter=10000):
 
     self.pars=[]; # list of free parameters
@@ -63,6 +63,7 @@ class fit_lin:
     self.cbg0=cbg0; # use background idependent on both drive and freqeuncy (2 extra parameters)
     self.cbg=cbg;   # use background proportional to drive and independent on frequency (2 extra parameters)
     self.lbg=lbg;  # use background proportional to drive and linear in frequency (2 extra parameters)
+    self.wp=weight_pwr; # use 1/amp^wp as a fitting weight
 
     # scaling factors
     self.fsc = numpy.max(FF)
@@ -204,7 +205,9 @@ class fit_lin:
   # function for minimization
   def minfunc(self, par, FF, XX, YY, DD):
     VV = self.func(FF,DD, par)
-    return numpy.linalg.norm(XX + 1j*YY - VV)
+    if self.wp==0: W = 1
+    else: W = 1/numpy.abs(VV)**self.wp
+    return numpy.linalg.norm((XX + 1j*YY - VV)*W)
 
   ####
 
@@ -350,7 +353,9 @@ class fit_bphase(fit_lin):
     dFx = dF / (1 + 0.477*(numpy.abs(VV)/v0)**1.16)
 
     VVc = DD*AM*dF*1j*FF / (F0**2 - FF**2 + 1j*FF*dFx)
-    return numpy.linalg.norm(VV - VVc)
+    if self.wp==0: W = 1
+    else: W = 1/numpy.abs(VVc)**self.wp
+    return numpy.linalg.norm((VV - VVc)*W)
 
   # parameter scaling
   def par_scales(self, asc,dsc,fsc):
@@ -425,7 +430,9 @@ class fit_nonlin(fit_lin):
     if not self.dfunc is None: dFx = dF*self.dfunc(self.asc*numpy.abs(CC)*FF/F0)
     else: dFx = dF
     CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
-    return numpy.linalg.norm(CC - CCc)
+    if self.wp==0: W = 1
+    else: W = 1/numpy.abs(CCc)**self.wp
+    return numpy.linalg.norm((CC - CCc)*W)
 
 ###############################################################
 # Oscillator with arbitrary 1st-order non-linear functions:
@@ -506,7 +513,9 @@ class fit_nonlin1(fit_lin):
     F0x = F0*(1 + a*x)
     dFx = dF*(1 + b*v)
     CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
-    return numpy.linalg.norm(CC - CCc)
+    if self.wp==0: W = 1
+    else: W = 1/numpy.abs(CCc)**self.wp
+    return numpy.linalg.norm((CC - CCc)*W)
 
   # parameter scaling
   def par_scales(self, asc,dsc,fsc):

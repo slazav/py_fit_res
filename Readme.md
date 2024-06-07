@@ -50,6 +50,7 @@ amp = fit.get_amp(ff)
 *   `cbg=1`  -- use background proportional to drive and independent on frequency (2 extra parameters)
 *   `lbg=1`  -- use background proportional to drive and linear in frequency (2 extra parameters)
 *   `do_fit=1`    -- do actual fitting or return initial conditions (useful for tests)
+*   `weight_pwr=0` -- Use 1/hypot(XX,YY)^weight_pwr as a fitting weight. Default is 0, use 1 or 2 if accurate fitting of background is required
 *   `fit_displ=None, fit_maxiter=10000` -- parameters passed to `scipy.optimize.minimize`
 
 No not use `cbg0` and `cbg` together unless you have multiple drives in your data

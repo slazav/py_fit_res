@@ -31,7 +31,7 @@ drives = numpy.unique(DD)
 
 ##########
 
-fit = fit_res.fit_nonlin1(FF,XX,YY,DD, do_fit=1, cbg0=1, cbg=1, lbg=0, coord=0)
+fit = fit_res.fit_nonlin1(FF,XX,YY,DD, do_fit=1, cbg0=1, cbg=1, lbg=0, coord=0, weight_pwr=1)
 
 Amp = fit.get_amp()
 F0 = fit.get_f0()
