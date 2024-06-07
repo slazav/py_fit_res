@@ -531,6 +531,10 @@ class fit_nonlin1(fit_lin):
     a = 1/numpy.max(numpy.hypot(XX, YY))
     p.insert(4, -a * p[3]/p[2])
     p.insert(5, a)
+    # adjust amplitude:  amp -> amp*(1+a*|amp|)
+    k = 1 + p[5]*numpy.hypot(p[0],p[1])
+    p[0] *= k
+    p[1] *= k
     return p
 
 
