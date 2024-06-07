@@ -1,0 +1,115 @@
+#!/usr/bin/python3
+
+# fit resonance using 1st-order non-linear functions:
+#   f0n(|x|) = f0*(1 + a*|x|)
+#   dFn(|v|) = df*(1 + b*|v|)
+# (fit_res.fit_nonlin1 class)
+
+import numpy
+import scipy.optimize
+import matplotlib.pyplot as plt
+
+import sys
+sys.path.insert(0,'..')
+import fit_res
+
+
+################################################################################
+## Load data
+FF,XX,YY,DD = numpy.loadtxt("example8.txt", usecols=(1,2,3,4), unpack=True)
+sh = 0.5e-7
+
+# choose a few drives
+drives = numpy.unique(DD)
+ii = numpy.logical_or.reduce(
+  (DD==drives[0], DD==drives[3]))
+FF=FF[ii]
+XX=XX[ii]
+YY=YY[ii]
+DD=DD[ii]
+drives = numpy.unique(DD)
+
+##########
+
+fit = fit_res.fit_nonlin1(FF,XX,YY,DD, do_fit=1, cbg0=1, cbg=1, lbg=0, coord=0)
+
+Amp = fit.get_amp()
+F0 = fit.get_f0()
+dF = fit.get_df()
+a = fit.get_a()
+b = fit.get_b()
+a2 = 0
+b2 = 0
+
+VV = XX + 1j*YY - fit.func_bg(FF, DD)
+CC = VV * F0/FF/1j
+II = FF**2 + Amp*DD*dF*F0/CC
+F0n = numpy.sqrt(numpy.real(II))
+dFn = numpy.imag(II)/FF
+
+(fig, ax) = plt.subplots(2,3)
+ff=numpy.linspace(numpy.min(FF), numpy.max(FF), 200)
+ff=numpy.append(ff, numpy.flip(ff))
+cc=numpy.linspace(0,numpy.max(abs(CC))*1.05, 200)
+vv=numpy.linspace(0,numpy.max(abs(VV))*1.05, 200)
+
+n=0
+for d in drives:
+  ii = DD==d
+  n+=1
+  C = 'C%d'%(n%10)
+
+  # data
+  ax[0,1].plot(FF[ii], -n*sh+XX[ii], C+'.-')
+  ax[1,1].plot(FF[ii], n*sh+YY[ii], C+'.-')
+  ax[0,0].plot(FF[ii], n*sh+numpy.hypot(XX[ii],YY[ii]), C+'.-', label='%.1fnA'%(d*1e9))
+
+  ## fit
+  xx = fit.func(ff, d)
+  ax[0,1].plot(ff, -n*sh+numpy.real(xx), 'k-', linewidth=0.8)
+  ax[1,1].plot(ff, n*sh+numpy.imag(xx), 'k-', linewidth=0.8)
+  ax[0,0].plot(ff, n*sh+numpy.abs(xx), 'k-', linewidth=0.8)
+
+#  ## bg
+#  bg = fit.func_bg(ff, d)
+#  ax[0,1].plot(ff, -n*sh+numpy.real(bg), 'k--', linewidth=0.8)
+#  ax[1,1].plot(ff, n*sh+numpy.imag(bg), 'k--', linewidth=0.8)
+#  ax[0,0].plot(ff, n*sh+numpy.abs(bg), 'k--', linewidth=0.8)
+
+  # F0n, dFn
+  ax[0,2].plot(numpy.abs(CC[ii]), F0n[ii], C+'.')
+  ax[1,2].plot(numpy.abs(VV[ii]), dFn[ii], C+'.')
+
+#  ax[0,2].plot(cc,numpy.polyval(pF0n, cc), 'k-', linewidth=0.5)
+#  ax[1,2].plot(vv,numpy.polyval(pdFn, vv), 'k-', linewidth=0.5)
+
+  ax[0,2].plot(cc, F0*(1 + a*cc + (a2*cc)**2), 'k-', linewidth=0.5)
+  ax[1,2].plot(vv, dF*(1 + b*vv + (b2*vv)**2), 'k-', linewidth=0.5)
+
+  # gradients
+  #ax[1,2].plot(FF[ii], numpy.gradient(abs(VV[ii])), C+'.-')
+
+#  numpy.savetxt('pl%d_data.txt'%(n), numpy.column_stack((FF[ii],XX[ii],YY[ii],abs(CC[ii]),F0n[ii],abs(VV[ii]),dFn[ii])))
+#  numpy.savetxt('pl%d_fit.txt'%(n),  numpy.column_stack((ff, xx.real, xx.imag)))
+#  numpy.savetxt('pl%d_funcs.txt'%(n), numpy.column_stack((cc,F0*ffunc(cc),vv,dF*dfunc(vv))))
+
+
+
+######
+
+#ax[0,2].set_ylim((1588,1591))
+#ax[1,2].set_ylim((0,4))
+
+ax[0,0].legend()
+ax[0,0].set_title('|V| [Vrms]')
+ax[0,1].set_title('Re(V) [Vrms]')
+ax[1,1].set_title('Im(V) [Vrms]')
+ax[0,2].set_title('omega_n [Hz]')
+ax[1,2].set_title('delta_n [Hz]')
+for i in (0,1,2): ax[0,i].set_xlabel('freq [Hz]')
+
+plt.gcf().set_size_inches(10, 10)
+plt.savefig("example8.png", dpi=100)
+plt.close()
+
+

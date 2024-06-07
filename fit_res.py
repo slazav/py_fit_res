@@ -368,7 +368,7 @@ class fit_bphase(fit_lin):
 
 
 ###############################################################
-# Oscillator with arbitrary non-linear functions f0n(|x|) and dFn(|v|)
+# Oscillator with arbitrary fixed non-linear functions f0n(|x|) and dFn(|v|)
 class fit_nonlin(fit_lin):
 
   def __init__(self, *args, ffunc=None, dfunc=None, **kargs):
@@ -426,6 +426,103 @@ class fit_nonlin(fit_lin):
     else: dFx = dF
     CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
     return numpy.linalg.norm(CC - CCc)
+
+###############################################################
+# Oscillator with arbitrary 1st-order non-linear functions:
+#   f0n(|x|) = f0*(1 + a*|x|)
+#   dFn(|v|) = df*(1 + b*|v|)
+# (4 extra fitting parameters: a,b)
+class fit_nonlin1(fit_lin):
+  bg_offset = 6 # offset of background parameters in pars array
+
+  def __init__(self, *args, **kargs):
+    fit_lin.__init__(self, *args, **kargs)
+
+  def get_a(self, p=None):
+    if p is None: p = self.pars
+    return p[4]
+
+  def get_a_e(self, e=None):
+    if e is None: e = self.errs
+    return e[4]
+
+  def get_b(self, p=None):
+    if p is None: p = self.pars
+    return p[5]
+
+  def get_b_e(self, e=None):
+    if e is None: e = self.errs
+    return e[5]
+
+  # Function for fitting:
+  def func(self, FF, DD, p=None):
+    AM = self.get_amp(p);
+    F0 = self.get_f0(p)
+    dF = self.get_df(p)
+    a  = self.get_a(p)
+    b  = self.get_b(p)
+
+    # coordinate!
+    def cfunc(x, dr, f):
+      v = numpy.abs(x * f/F0)
+      F0x = F0*(1 + a*x)
+      dFx = dF*(1 + b*v)
+      return dr / (F0x**2 - f**2 + 1j*f*dFx)
+
+    VV = numpy.zeros_like(FF, dtype=complex)
+    if AM!=0:
+
+      x=0
+      for i in range(FF.size):
+        if isinstance(DD, (list, tuple, numpy.ndarray)): dr=DD[i]
+        else: dr = DD
+        dr *= dF*F0*AM
+
+        # for finding x=|X|
+        def zfunc(x): return x - abs(cfunc(x,dr,FF[i]))
+        res = scipy.optimize.root_scalar(zfunc, x0=x)
+        if not res.converged: print('not converged')
+        x = res.root
+        VV[i] = cfunc(x,dr,FF[i])
+
+      if not self.coord: VV *= 1j*FF/F0
+
+    VV += self.func_bg(FF, DD, p)
+    return VV
+
+
+  # function for minimization
+  def minfunc(self, par, FF, XX, YY, DD):
+    CC = XX + 1j*YY - self.func_bg(FF,DD, par)
+    AM = self.get_amp(par);
+    F0 = self.get_f0(par)
+    dF = self.get_df(par)
+    a  = self.get_a(par)
+    b  = self.get_b(par)
+    # ->coord
+    if not self.coord:  CC*= F0/(1j*FF)
+    x = numpy.abs(CC)
+    v = numpy.abs(F0/FF*CC)
+    F0x = F0*(1 + a*x)
+    dFx = dF*(1 + b*v)
+    CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
+    return numpy.linalg.norm(CC - CCc)
+
+  # parameter scaling
+  def par_scales(self, asc,dsc,fsc):
+    sc = fit_lin.par_scales(self,asc,dsc,fsc)
+    sc.insert(4, 1/asc)
+    sc.insert(5, 1/asc)
+    return sc
+
+  # find initial conditions for scaled data, fill pars list
+  def par_init(self, FF,XX,YY,DD):
+    p = fit_lin.par_init(self,FF,XX,YY,DD)
+    # some reasonable parameters
+    a = 1/numpy.max(numpy.hypot(XX, YY))
+    p.insert(4, -a * p[3]/p[2])
+    p.insert(5, a)
+    return p
 
 
 ###############################################################

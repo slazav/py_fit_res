@@ -126,7 +126,7 @@ df_n(|v|) = df / (1 + 0.447*(|v|/v0)**1.16)
 ```
 
 ----
-### Arbitrary non-linear oscillator
+### Non-linear oscillator with arbitrary fixed non-linear functions
 ```
 fit = fit_res.fit_nonlin(FF,XX,YY, ffunc=None, dfunc=None, <parameters>)
 ```
@@ -142,6 +142,18 @@ itransform(func, dfunc, x, npts=100)
 ```
 
 See the PDF note for the theory
+
+----
+### Oscillator with arbitrary 1st-order non-linear functions
+
+fit = fit_res.fit_nonlin1(FF,XX,YY, <parameters>)
+
+Use 1st-order non-linear functions:
+```
+f0n(|x|) = f0 (1 + a|x|)
+dfn(|v|) = df0 (1 + b|x|)
+```
+with two additional fitting parameters, `a` and `b`.
 
 ----
 #### Examples
@@ -170,9 +182,11 @@ Example 4: Oscillator in ballistic B-phase, multiple frequency sweeps at multipl
 
 ![example 4](https://raw.githubusercontent.com/slazav/py_fit_res/master/examples/example4.png)
 
-Example 5: Same data as in the example 4. 
+Example 5: Same data as in the example 4.
 
 Examples 6 and 7: more realistic examples for the note (see below)
+
+Example 8: Oscillator with arbitrary 1st-order non-linear functions
 
 #### See also:
 
