@@ -509,7 +509,7 @@ class fit_nonlin1(fit_lin):
     # ->coord
     if not self.coord:  CC*= F0/(1j*FF)
     x = numpy.abs(CC)
-    v = numpy.abs(F0/FF*CC)
+    v = numpy.abs(FF/F0*CC)
     F0x = F0*(1 + a*x)
     dFx = dF*(1 + b*v)
     CCc = DD*AM*dF*F0 / (F0x**2 - FF**2 + 1j*FF*dFx)
